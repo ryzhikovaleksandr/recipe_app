@@ -52,7 +52,7 @@
         <!-- Список покупок -->
         <div class="section">
             <h3>🛒 Список покупок</h3>
-            <table class="shopping-table" id="shopping-list">
+            <table class="shopping-table">
                 <thead>
                     <tr>
                         <th>Продукт</th>
@@ -60,8 +60,20 @@
                         <th>Единица</th>
                     </tr>
                 </thead>
-                <tbody id="shopping-tbody">
-                    <!-- Заполняется JavaScript -->
+                <tbody>
+                    {% for item in shopping_list %}
+                    <tr>
+                        <td>{{ item.name }}</td>
+                        <td class="quantity-highlight">
+                            {% if item.quantity == item.quantity|int %}
+                                {{ item.quantity|int }}
+                            {% else %}
+                                {{ "%.1f"|format(item.quantity) }}
+                            {% endif %}
+                        </td>
+                        <td>{{ item.unit }}</td>
+                    </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
@@ -144,7 +156,7 @@ function generateShoppingListTable(recipeIngredients) {
 // Обработка Enter в поле количества персон
 document.getElementById('servings').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
-        updateServings('{{ recipe.id|escapejs }}');
+        updateServings('{{ recipe.id|tojson }}');
     }
 });
 </script>
