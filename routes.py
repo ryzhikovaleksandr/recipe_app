@@ -44,4 +44,23 @@ def recipe_page(recipe_id):
 
     recipe_data = recipe.to_dict(servings)
 
-    return render_template('recipe.html', recipe=recipe_data)
+    # Генерируем список покупок на сервере
+    shopping_list = generate_shopping_list(recipe_data['ingredients'])
+
+    return render_template('recipe.html', recipe=recipe_data, shopping_list=shopping_list)
+
+def generate_shopping_list(ingredients):
+    """Генерирует список покупок, группируя одинаковые ингредиенты"""
+    grouped = {}
+    for ingredient in ingredients:
+        key = f"{ingredient['name']}_{ingredient['unit']}"
+        if key in grouped:
+            grouped[key]['quantity'] += ingredient['quantity']
+        else:
+            grouped[key] = {
+                'name': ingredient['name'],
+                'unit': ingredient['unit'],
+                'quantity': ingredient['quantity']
+            }
+
+    return list(grouped.values())
