@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Книга рецептов - Главная{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>🍳 Книга рецептов</h1>
+    <p style="text-align: center; font-size: 1.2em; color: #666; margin-bottom: 30px;">
+        Выберите рецепт и количество персон для приготовления
+    </p>
+
+    <div id="recipes-container">
+        <div class="recipe-selector" id="recipe-list">
+            <!-- Рецепты будут загружены через JavaScript -->
+        </div>
+    </div>
+</div>
+
+<script>
+// Загружаем список рецептов при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    loadRecipes();
+});
+
+async function loadRecipes() {
+    try {
+        const response = await fetch('/api/recipes');
+        const recipes = await response.json();
+
+        const recipeList = document.getElementById('recipe-list');
+        recipeList.innerHTML = '';
+
+        recipes.forEach(recipe => {
+            const recipeCard = document.createElement('div');
+            recipeCard.className = 'recipe-card';
+            recipeCard.onclick = () => selectRecipe(recipe.id, recipe.name);
+
+            recipeCard.innerHTML = `
+                <h3>${recipe.name}</h3>
+                <p>Базовое количество порций: ${recipe.base_servings}</p>
+                <p style="font-size: 0.9em; opacity: 0.8;">Нажмите для выбора</p>
+            `;
+
+            recipeList.appendChild(recipeCard);
+        });
+    } catch (error) {
+        console.error('Ошибка загрузки рецептов:', error);
+        document.getElementById('recipe-list').innerHTML = 
+            '<p style="text-align: center; color: #e74c3c;">Ошибка загрузки рецептов</p>';
+    }
+}
+
+function selectRecipe(recipeId, recipeName) {
+    // Создаем форму для ввода количества персон
+    const recipesContainer = document.getElementById('recipes-container');
+
+    recipesContainer.innerHTML = `
+        <div class="card" style="text-align: center;">
+            <h2>Вы выбрали: ${recipeName}</h2>
+            <div class="servings-input">
+                <label for="servings">Количество персон:</label>
+                <input type="number" id="servings" min="1" max="20" value="4" />
+                <button onclick="goToRecipe(${recipeId})">Показать рецепт</button>
+            </div>
+            <button onclick="location.reload()" style="background: #95a5a6; margin-top: 15px;">
+                Выбрать другой рецепт
+            </button>
+        </div>
+    `;
+
+    // Фокус на поле ввода
+    document.getElementById('servings').focus();
+
+    // Обработка Enter в поле ввода
+    document.getElementById('servings').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            goToRecipe(recipeId);
+        }
+    });
+}
+
+function goToRecipe(recipeId) {
+    const servings = document.getElementById('servings').value;
+    if (servings && servings > 0) {
+        window.location.href = `/recipe/${recipeId}?servings=${servings}`;
+    } else {
+        alert('Пожалуйста, введите корректное количество персон');
+    }
+}
+</script>
+{% endblock %}
