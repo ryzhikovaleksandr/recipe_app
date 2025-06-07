@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}{{ recipe.name }} - Книга рецептов{% endblock %}
+
+{% block content %}
+<a href="/" class="back-btn">← Назад к списку рецептов</a>
+
+<div class="card">
+    <h1>{{ recipe.name }}</h1>
+
+    <div class="servings-input">
+        <label for="servings">Количество персон:</label>
+        <input type="number" id="servings" min="1" max="20" value="{{ recipe.servings }}" />
+        <button onclick="updateServings('{{ recipe.id }}')">Пересчитать</button>
+        <p style="margin-top: 10px; color: #666;">
+            Базовый рецепт рассчитан на {{ recipe.base_servings }} персон{{ 'у' if recipe.base_servings == 1 else ('ы' if recipe.base_servings < 5 else '') }}
+        </p>
+    </div>
+</div>
+
+<div class="recipe-content">
+    <div class="left-column">
+        <!-- Ингредиенты -->
+        <div class="section">
+            <h3>🥘 Ингредиенты (на {{ recipe.servings }} персон{{ 'у' if recipe.servings == 1 else ('ы' if recipe.servings < 5 else '') }})</h3>
+            <table class="ingredients-table">
+                <thead>
+                    <tr>
+                        <th>Ингредиент</th>
+                        <th>Количество</th>
+                        <th>Единица</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ingredient in recipe.ingredients %}
+                    <tr>
+                        <td>{{ ingredient.name }}</td>
+                        <td class="quantity-highlight">
+                            {% if ingredient.quantity == ingredient.quantity|int %}
+                                {{ ingredient.quantity|int }}
+                            {% else %}
+                                {{ "%.1f"|format(ingredient.quantity) }}
+                            {% endif %}
+                        </td>
+                        <td>{{ ingredient.unit }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Список покупок -->
+        <div class="section">
+            <h3>🛒 Список покупок</h3>
+            <table class="shopping-table" id="shopping-list">
+                <thead>
+                    <tr>
+                        <th>Продукт</th>
+                        <th>Количество</th>
+                        <th>Единица</th>
+                    </tr>
+                </thead>
+                <tbody id="shopping-tbody">
+                    <!-- Заполняется JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="right-column">
+        <!-- Шаги приготовления -->
+        <div class="section">
+            <h3>👨‍🍳 Шаги приготовления</h3>
+            <table class="steps-table">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Шаг</th>
+                        <th>Описание</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for step in recipe.steps %}
+                    <tr>
+                        <td style="text-align: center;">
+                            <span class="step-number">{{ loop.index }}</span>
+                        </td>
+                        <td>{{ step }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// Генерируем список покупок при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    const recipeIngredients = JSON.parse('{{ recipe.ingredients | tojson }}');
+    generateShoppingListTable(ingredients);
+});
+
+function generateShoppingListTable(recipeIngredients) {
+    // Группируем ингредиенты по названию и единице измерения
+    const grouped = {};
+    recipeIngredients.forEach(ingredient => {
+        const key = `${ingredient.name}_${ingredient.unit}`;
+        if (grouped[key]) {
+            grouped[key].quantity += ingredient.quantity;
+        } else {
+            grouped[key] = {
+                name: ingredient.name,
+                unit: ingredient.unit,
+                quantity: ingredient.quantity
+            };
+        }
+    });
+
+    const shoppingList = Object.values(grouped);
+    const tbody = document.getElementById('shopping-tbody');
+    tbody.innerHTML = '';
+
+    shoppingList.forEach(item => {
+        const row = document.createElement('tr');
+
+        // Форматируем количество
+        let quantity = item.quantity;
+        if (quantity === Math.floor(quantity)) {
+            quantity = Math.floor(quantity);
+        } else {
+            quantity = quantity.toFixed(1);
+        }
+
+        row.innerHTML = `
+            <td>${item.name}</td>
+            <td class="quantity-highlight">${quantity}</td>
+            <td>${item.unit}</td>
+        `;
+
+        tbody.appendChild(row);
+    });
+}
+
+// Обработка Enter в поле количества персон
+document.getElementById('servings').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        updateServings('{{ recipe.id|escapejs }}');
+    }
+});
+</script>
+{% endblock %}
